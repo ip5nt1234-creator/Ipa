@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة عبدالإله | تثبيت تطبيقات iOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card: #151921;
+      --border: #232936;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --text: #f0f6fc;
+      --text-dim: #8b949e;
+      --success: #238636;
+      --error: #f85149;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 26px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    h1 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    p.sub { text-align: center; color: var(--text-dim); font-size: 13px; margin-bottom: 20px; }
+    .group { margin-bottom: 14px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-dim); }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b0e14;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: var(--accent); }
+    .file-box {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      background: #0b0e14;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .file-box input { display: none; }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-install {
+      display: none;
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 10px;
+      background: var(--success);
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .status { margin-top: 12px; text-align: center; font-size: 13px; color: #58a6ff; line-height: 1.5; }
+    .error-msg { color: var(--error) !important; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>منصة عبدالإله</h1>
+  <p class="sub">رفع وتثبيت تطبيقات iOS المباشر عبر سيرفر GitHub الرسمي</p>
+
+  <div class="group">
+    <label>مفتاح GitHub Token (يُطلب مرة واحدة ويُحفظ تلقائياً):</label>
+    <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+  </div>
+
+  <div class="group">
+    <label>اختر ملف التطبيق (IPA):</label>
+    <div class="file-box" onclick="document.getElementById('ipaFile').click()">
+      <span id="ipaLabel">اضغط لاختيار ملف IPA من الملفات</span>
+      <input type="file" id="ipaFile" accept=".ipa" onchange="handleFileSelect(this)">
+    </div>
+  </div>
+
+  <div class="group">
+    <label>اسم التطبيق:</label>
+    <input type="text" id="appName" placeholder="اسم التطبيق">
+  </div>
+
+  <div class="group">
+    <label>معرف الحزمة (Bundle ID):</label>
+    <input type="text" id="bundleId" placeholder="معرف الحزمة">
+  </div>
+
+  <button class="btn" id="actionBtn" onclick="uploadAndInstall()">رفع وتجهيز التثبيت</button>
+  
+  <div id="statusText" class="status"></div>
+  <a id="installBtn" class="btn-install" href="#">تثبيت التطبيق على الآيفون مباشرة</a>
+</div>
+
+<script>
+const REPO_OWNER = "ip5nt1234-creator";
+const REPO_NAME = "Ipa";
+
+if (localStorage.getItem('saved_gh_token')) {
+  document.getElementById('ghToken').value = localStorage.getItem('saved_gh_token');
+}
+
+let selectedFile = null;
+
+async function handleFileSelect(input) {
+  if (!input.files || !input.files[0]) return;
+  selectedFile = input.files[0];
+  document.getElementById('ipaLabel').innerText = "تم اختيار: " + selectedFile.name;
+  
+  const status = document.getElementById('statusText');
+  status.classList.remove('error-msg');
+  status.innerText = "جاري قراءة بيانات التطبيق الأصلية...";
+
+  try {
+    const zip = await JSZip.loadAsync(selectedFile);
+    let plistFile = null;
+
+    zip.forEach((relativePath, file) => {
+      if (/^Payload\/[^\/]+\.app\/Info\.plist$/i.test(relativePath)) {
+        plistFile = file;
+      }
+    });
+
+    if (plistFile) {
+      const content = await plistFile.async('string');
+      const bundleMatch = content.match(/<key>CFBundleIdentifier<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      if (bundleMatch && bundleMatch[1]) {
+        document.getElementById('bundleId').value = bundleMatch[1].trim();
+      }
+
+      const nameMatch = content.match(/<key>(?:CFBundleDisplayName|CFBundleName)<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      if (nameMatch && nameMatch[1]) {
+        document.getElementById('appName').value = nameMatch[1].trim();
+      } else {
+        document.getElementById('appName').value = selectedFile.name.replace(/\.ipa$/i, '');
+      }
+      status.innerText = "تم استخراج الاسم والبندل الحقيقيين بنجاح.";
+    }
+  } catch (e) {
+    status.innerText = "يمكنك كتابة الاسم والبندل يدويًا.";
+  }
+}
+
+async function uploadAndInstall() {
+  const token = document.getElementById('ghToken').value.trim();
+  const appName = document.getElementById('appName').value.trim() || 'App';
+  const bundleId = document.getElementById('bundleId').value.trim() || 'com.app';
+  const status = document.getElementById('statusText');
+  const actionBtn = document.getElementById('actionBtn');
+  const installBtn = document.getElementById('installBtn');
+
+  if (!token) {
+    alert('يرجى وضع GitHub Token الخاص بك');
+    return;
+  }
+  if (!selectedFile) {
+    alert('يرجى اختيار ملف IPA أولاً');
+    return;
+  }
+
+  localStorage.setItem('saved_gh_token', token);
+  installBtn.style.display = 'none';
+  status.classList.remove('error-msg');
+  actionBtn.disabled = true;
+
+  try {
+    status.innerText = "1/3 جاري تهيئة مساحة الرفع الرسمية في GitHub...";
+    const tag = "app-" + Date.now();
+
+    const relRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        tag_name: tag,
+        name: `تطبيق: ${appName}`,
+        draft: false,
+        prerelease: false
+      })
+    });
+
+    if (!relRes.ok) throw new Error('تأكد من صحة الـ Token وصلاحية repo');
+    const relData = await relRes.json();
+    const uploadUrl = relData.upload_url.replace('{?name,label}', '');
+
+    status.innerText = "2/3 جاري رفع الـ IPA إلى سيرفرات GitHub المباشرة...";
+    const cleanFileName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    
+    const ipaUploadRes = await fetch(`${uploadUrl}?name=${cleanFileName}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'application/octet-stream'
+      },
+      body: selectedFile
+    });
+
+    if (!ipaUploadRes.ok) throw new Error('فشل رفع ملف الـ IPA إلى سيرفر GitHub');
+    const ipaData = await ipaUploadRes.json();
+    const directIpaUrl = ipaData.browser_download_url;
+
+    status.innerText = "3/3 جاري إنشاء ملف التثبيت المباشر...";
+    const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>items</key>
+  <array>
+    <dict>
+      <key>assets</key>
+      <array>
+        <dict>
+          <key>kind</key>
+          <string>software-package</string>
+          <key>url</key>
+          <string>${directIpaUrl}</string>
+        </dict>
+      </array>
+      <key>metadata</key>
+      <dict>
+        <key>bundle-identifier</key>
+        <string>${bundleId}</string>
+        <key>bundle-version</key>
+        <string>1.0</string>
+        <key>kind</key>
+        <string>software</string>
+        <key>title</key>
+        <string>${appName}</string>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>`;
+
+    const plistRes = await fetch(`${uploadUrl}?name=manifest.plist`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Content-Type': 'text/xml'
+      },
+      body: manifest
+    });
+
+    const plistData = await plistRes.json();
+    const directPlistUrl = plistData.browser_download_url;
+
+    const otaUrl = `itms-services://?action=download-manifest&url=${encodeURIComponent(directPlistUrl)}`;
+
+    installBtn.href = otaUrl;
+    installBtn.style.display = 'block';
+    installBtn.innerText = `تثبيت ${appName} على الآيفون`;
+    status.innerText = "تم التجهيز والرفع بنجاح وبدون أي انقطاع!";
+
+  } catch (err) {
+    status.classList.add('error-msg');
+    status.innerText = err.message || "حدث خطأ، يرجى التأكد من التوكن والمحاولة ثانية.";
+  } finally {
+    actionBtn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
