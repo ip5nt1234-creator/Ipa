@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة عبدالإله | توقيع وتثبيت iOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card: #151921;
+      --border: #232936;
+      --accent: #0071e3;
+      --text: #f0f6fc;
+      --text-dim: #8b949e;
+      --success: #238636;
+      --error: #f85149;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 480px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    h1 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 4px; }
+    p.sub { text-align: center; color: var(--text-dim); font-size: 13px; margin-bottom: 20px; }
+    .group { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-dim); }
+    input[type="text"], input[type="password"] { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid var(--border); background: #0b0e14; color: #fff; font-size: 14px; outline: none; }
+    .file-box { border: 2px dashed var(--border); border-radius: 10px; padding: 12px; text-align: center; background: #0b0e14; cursor: pointer; font-size: 13px; }
+    .file-box input { display: none; }
+    .row { display: flex; gap: 10px; }
+    .row .group { flex: 1; }
+    .preview-box { display: flex; align-items: center; gap: 12px; }
+    .preview-img { width: 50px; height: 50px; border-radius: 12px; object-fit: cover; background: #232936; display: none; }
+    .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--accent); color: white; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-install { display: none; margin-top: 15px; padding: 14px; border-radius: 10px; background: var(--success); color: white; text-align: center; text-decoration: none; font-weight: 700; font-size: 16px; }
+    .status { margin-top: 12px; text-align: center; font-size: 13px; color: #58a6ff; line-height: 1.5; }
+    .error-msg { color: var(--error) !important; }
+    .progress-bar-container { width: 100%; background: #0b0e14; border-radius: 8px; margin-top: 10px; height: 8px; overflow: hidden; display: none; }
+    .progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.2s ease; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>منصة عبدالإله</h1>
+  <p class="sub">توقيع وتثبيت تطبيقات iOS مع تغيير الأيقونة</p>
+
+  <div class="group">
+    <label>ملف التطبيق (IPA):</label>
+    <div class="file-box" onclick="document.getElementById('ipaFile').click()">
+      <span id="ipaLabel">اختر ملف IPA</span>
+      <input type="file" id="ipaFile" accept=".ipa" onchange="handleIpa(this)">
+    </div>
+  </div>
+
+  <div class="group">
+    <label>أيقونة التطبيق (من الاستوديو):</label>
+    <div class="preview-box">
+      <img id="iconPreview" class="preview-img">
+      <div class="file-box" style="flex:1;" onclick="document.getElementById('iconFile').click()">
+        <span id="iconLabel">اختر صورة الأيقونة من الألبوم</span>
+        <input type="file" id="iconFile" accept="image/*" onchange="handleIcon(this)">
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="group">
+      <label>اسم التطبيق:</label>
+      <input type="text" id="appName" placeholder="الاسم">
+    </div>
+    <div class="group">
+      <label>معرف الحزمة (Bundle ID):</label>
+      <input type="text" id="bundleId" placeholder="com.app">
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="group">
+      <label>ملف الشهادة (.p12):</label>
+      <div class="file-box" onclick="document.getElementById('p12File').click()">
+        <span id="p12Label">اختر .p12</span>
+        <input type="file" id="p12File" accept=".p12" onchange="updateLabel(this, 'p12Label')">
+      </div>
+    </div>
+    <div class="group">
+      <label>ملف (.mobileprovision):</label>
+      <div class="file-box" onclick="document.getElementById('provFile').click()">
+        <span id="provLabel">اختر البروفجن</span>
+        <input type="file" id="provFile" accept=".mobileprovision" onchange="updateLabel(this, 'provLabel')">
+      </div>
+    </div>
+  </div>
+
+  <div class="group">
+    <label>كلمة سر الشهادة (Password):</label>
+    <input type="password" id="p12Password" placeholder="إذا كانت الشهادة بكلمة سر">
+  </div>
+
+  <button class="btn" id="actionBtn" onclick="signAndUpload()">توقيع وتجهيز التثبيت</button>
+
+  <div class="progress-bar-container" id="progContainer">
+    <div class="progress-bar" id="progBar"></div>
+  </div>
+
+  <div id="statusText" class="status"></div>
+  <a id="installBtn" class="btn-install" href="#">تثبيت التطبيق الآن</a>
+</div>
+
+<script>
+let selectedIpa = null;
+let selectedIcon = null;
+
+function updateLabel(input, labelId) {
+  if (input.files && input.files[0]) {
+    document.getElementById(labelId).innerText = input.files[0].name;
+  }
+}
+
+function handleIcon(input) {
+  if (input.files && input.files[0]) {
+    selectedIcon = input.files[0];
+    document.getElementById('iconLabel').innerText = selectedIcon.name;
+    const preview = document.getElementById('iconPreview');
+    preview.src = URL.createObjectURL(selectedIcon);
+    preview.style.display = 'block';
+  }
+}
+
+async function handleIpa(input) {
+  if (!input.files || !input.files[0]) return;
+  selectedIpa = input.files[0];
+  document.getElementById('ipaLabel').innerText = selectedIpa.name;
+
+  try {
+    const zip = await JSZip.loadAsync(selectedIpa);
+    let plistFile = null;
+    zip.forEach((path, file) => {
+      if (/^Payload\/[^\/]+\.app\/Info\.plist$/i.test(path)) plistFile = file;
+    });
+
+    if (plistFile) {
+      const content = await plistFile.async('string');
+      const bundle = content.match(/<key>CFBundleIdentifier<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      const name = content.match(/<key>(?:CFBundleDisplayName|CFBundleName)<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      if (bundle) document.getElementById('bundleId').value = bundle[1].trim();
+      if (name) document.getElementById('appName').value = name[1].trim();
+    }
+  } catch(e) {}
+}
+
+function signAndUpload() {
+  if (!selectedIpa) {
+    alert('يرجى اختيار ملف IPA أولاً');
+    return;
+  }
+
+  const p12 = document.getElementById('p12File').files[0];
+  const prov = document.getElementById('provFile').files[0];
+  const p12Pass = document.getElementById('p12Password').value;
+  const appName = document.getElementById('appName').value.trim() || 'App';
+  const bundleId = document.getElementById('bundleId').value.trim() || 'com.app';
+
+  const status = document.getElementById('statusText');
+  const actionBtn = document.getElementById('actionBtn');
+  const installBtn = document.getElementById('installBtn');
+  const progContainer = document.getElementById('progContainer');
+  const progBar = document.getElementById('progBar');
+
+  installBtn.style.display = 'none';
+  status.classList.remove('error-msg');
+  progContainer.style.display = 'block';
+  progBar.style.width = '0%';
+  actionBtn.disabled = true;
+  status.innerText = "جاري نقل الملفات وبدء التوقيع الرقمي...";
+
+  const formData = new FormData();
+  formData.append('ipa', selectedIpa);
+  if (p12) formData.append('p12', p12);
+  if (prov) formData.append('provision', prov);
+  if (selectedIcon) formData.append('icon', selectedIcon);
+  formData.append('p12Password', p12Pass);
+  formData.append('appName', appName);
+  formData.append('bundleId', bundleId);
+
+  const xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      progBar.style.width = percent + '%';
+      status.innerText = `جاري الرفع والمعالجة: ${percent}%`;
+    }
+  };
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      const manifestUrl = `${window.location.origin}/manifest?url=${encodeURIComponent(data.downloadUrl)}&name=${encodeURIComponent(appName)}&id=${encodeURIComponent(bundleId)}`;
+      installBtn.href = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
+      installBtn.style.display = 'block';
+      installBtn.innerText = `تثبيت ${appName} على الآيفون`;
+      status.innerText = "تم التوقيع والتجهيز بنجاح! اضغط زر التثبيت.";
+    } else {
+      status.classList.add('error-msg');
+      try {
+        status.innerText = JSON.parse(xhr.responseText).error || 'فشلت عملية التوقيع';
+      } catch(e) {
+        status.innerText = 'حدث خطأ في استجابة السيرفر';
+      }
+    }
+    actionBtn.disabled = false;
+  };
+
+  xhr.onerror = () => {
+    status.classList.add('error-msg');
+    status.innerText = 'انقطع الاتصال بالسيرفر أثناء الرفع.';
+    actionBtn.disabled = false;
+  };
+
+  xhr.open('POST', '/api/sign-and-upload', true);
+  xhr.send(formData);
+}
+</script>
+
+</body>
+</html>
