@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة عبدالإله 👑 | تثبيت تطبيقات iOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card: #151921;
+      --border: #232936;
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --text: #f0f6fc;
+      --text-dim: #8b949e;
+      --success: #238636;
+      --error: #f85149;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    h1 { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    p.sub { text-align: center; color: var(--text-dim); font-size: 14px; margin-bottom: 24px; }
+    .group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-dim); }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0b0e14;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+    .file-box {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      background: #0b0e14;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .file-box input { display: none; }
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: white;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-install {
+      display: none;
+      margin-top: 15px;
+      padding: 14px;
+      border-radius: 10px;
+      background: var(--success);
+      color: white;
+      text-align: center;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .status { margin-top: 12px; text-align: center; font-size: 13px; color: #58a6ff; line-height: 1.5; }
+    .error-msg { color: var(--error) !important; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>منصة عبدالإله</h1>
+  <p class="sub">رفع وتثبيت تطبيقات iOS من ملفات الجهاز مباشرة</p>
+
+  <div class="group">
+    <label>اختر ملف التطبيق (IPA):</label>
+    <div class="file-box" onclick="document.getElementById('ipaFile').click()">
+      <span id="ipaLabel">اضغط لاختيار ملف IPA من الآيفون</span>
+      <input type="file" id="ipaFile" accept=".ipa" onchange="handleFileSelect(this)">
+    </div>
+  </div>
+
+  <div class="group">
+    <label>اسم التطبيق:</label>
+    <input type="text" id="appName" placeholder="جاري القراءة أو اكتب الاسم يدويًا">
+  </div>
+
+  <div class="group">
+    <label>معرف الحزمة (Bundle ID):</label>
+    <input type="text" id="bundleId" placeholder="جاري القراءة أو اكتب البندل يدويًا">
+  </div>
+
+  <button class="btn" id="actionBtn" onclick="processUpload()">رفع وتجهيز التثبيت</button>
+  <div id="statusText" class="status"></div>
+
+  <a id="installBtn" class="btn-install" href="#">تثبيت على الآيفون مباشرة</a>
+</div>
+
+<script>
+let selectedFile = null;
+
+async function handleFileSelect(input) {
+  if (!input.files || !input.files[0]) return;
+  selectedFile = input.files[0];
+  document.getElementById('ipaLabel').innerText = "تم اختيار: " + selectedFile.name;
+  
+  const status = document.getElementById('statusText');
+  status.classList.remove('error-msg');
+  status.innerText = "جاري فحص ملف IPA وقراءة الاسم والبندل الحقيقيين...";
+
+  try {
+    const zip = await JSZip.loadAsync(selectedFile);
+    let plistFile = null;
+
+    // البحث عن Info.plist الأساسي داخل مجلد Payload/*.app/
+    zip.forEach((relativePath, file) => {
+      if (/^Payload\/[^\/]+\.app\/Info\.plist$/i.test(relativePath)) {
+        plistFile = file;
+      }
+    });
+
+    if (plistFile) {
+      const content = await plistFile.async('string');
+      
+      // استخراج Bundle ID
+      const bundleMatch = content.match(/<key>CFBundleIdentifier<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      if (bundleMatch && bundleMatch[1]) {
+        document.getElementById('bundleId').value = bundleMatch[1].trim();
+      }
+
+      // استخراج اسم التطبيق
+      const nameMatch = content.match(/<key>(?:CFBundleDisplayName|CFBundleName)<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      if (nameMatch && nameMatch[1]) {
+        document.getElementById('appName').value = nameMatch[1].trim();
+      } else {
+        document.getElementById('appName').value = selectedFile.name.replace(/\.ipa$/i, '');
+      }
+      status.innerText = "تم استخراج بيانات التطبيق بنجاح. يمكنك تعديلها الآن إذا أردت.";
+    } else {
+      fallbackDetails();
+    }
+  } catch (e) {
+    fallbackDetails();
+  }
+}
+
+function fallbackDetails() {
+  const cleanName = selectedFile.name.replace(/\.ipa$/i, '');
+  if (!document.getElementById('appName').value) {
+    document.getElementById('appName').value = cleanName;
+  }
+  if (!document.getElementById('bundleId').value) {
+    document.getElementById('bundleId').value = 'com.abdulelah.' + cleanName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  }
+  document.getElementById('statusText').innerText = "تم تعيين البيانات الافتراضية، يمكنك تعديلها بالأسفل.";
+}
+
+async function processUpload() {
+  if (!selectedFile) {
+    alert('يرجى اختيار ملف IPA من الملفات أولاً.');
+    return;
+  }
+
+  const appName = document.getElementById('appName').value.trim() || 'تطبيق جديد';
+  const bundleId = document.getElementById('bundleId').value.trim() || 'com.abdulelah.app';
+  const status = document.getElementById('statusText');
+  const actionBtn = document.getElementById('actionBtn');
+  const installBtn = document.getElementById('installBtn');
+
+  installBtn.style.display = 'none';
+  status.classList.remove('error-msg');
+  status.innerText = "جاري رفع ملف IPA (قد يستغرق بعض الوقت حسب حجم التطبيق والسرعة)...";
+  actionBtn.disabled = true;
+
+  try {
+    // الرفع المباشر مع دعم CORS
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    const uploadRes = await fetch('https://bashupload.com', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!uploadRes.ok) throw new Error('فشل في خادم الرفع');
+    const uploadText = await uploadRes.text();
+
+    // استخراج الرابط المباشر
+    const urlMatch = uploadText.match(/https?:\/\/[^\s]+/);
+    if (!urlMatch) throw new Error('تعذر استخراج رابط التحميل');
+
+    const directIpaUrl = urlMatch[0].trim();
+
+    // إنشاء ملف المانيفست (plist)
+    const manifest = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>items</key>
+  <array>
+    <dict>
+      <key>assets</key>
+      <array>
+        <dict>
+          <key>kind</key>
+          <string>software-package</string>
+          <key>url</key>
+          <string>${directIpaUrl}</string>
+        </dict>
+      </array>
+      <key>metadata</key>
+      <dict>
+        <key>bundle-identifier</key>
+        <string>${bundleId}</string>
+        <key>bundle-version</key>
+        <string>1.0</string>
+        <key>kind</key>
+        <string>software</string>
+        <key>title</key>
+        <string>${appName}</string>
+      </dict>
+    </dict>
+  </array>
+</dict>
+</plist>`;
+
+    status.innerText = "جاري تجهيز ملف التثبيت المباشر...";
+
+    // رفع ملف plist
+    const plistBlob = new Blob([manifest], { type: 'text/xml' });
+    const plistForm = new FormData();
+    plistForm.append('file', plistBlob, 'manifest.plist');
+
+    const plistRes = await fetch('https://bashupload.com', {
+      method: 'POST',
+      body: plistForm
+    });
+
+    const plistText = await plistRes.text();
+    const plistUrlMatch = plistText.match(/https?:\/\/[^\s]+/);
+    if (!plistUrlMatch) throw new Error('تعذر إنشاء رابط التثبيت');
+
+    const directPlistUrl = plistUrlMatch[0].trim();
+    const otaUrl = `itms-services://?action=download-manifest&url=${encodeURIComponent(directPlistUrl)}`;
+
+    installBtn.href = otaUrl;
+    installBtn.style.display = 'block';
+    installBtn.innerText = `تثبيت ${appName} على الآيفون`;
+    status.innerText = "تم التجهيز بنجاح! اضغط الزر الأخضر لتثبيت التطبيق.";
+
+  } catch (err) {
+    status.classList.add('error-msg');
+    status.innerText = "فشل أثناء التجهيز، تأكد من سرعة الاتصال وحجم الملف.";
+  } finally {
+    actionBtn.disabled = false;
+  }
+}
+</script>
+
+</body>
+</html>
