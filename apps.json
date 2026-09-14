@@ -1,0 +1,72 @@
+[
+  {
+    "id": "1",
+    "name": "يلا لايت (نسخ شد)",
+    "category": "نسخ خاصة ومعدلة",
+    "price": "على حسب الاشتراك ومدته",
+    "badge": "VIP",
+    "description": "نسخ مكررة مخصصة للشد والعمل السريع، ثبات عالي وتخطي حظر.",
+    "icon": "https://img.icons8.com/fluency/512/microphone.png",
+    "ipaUrl": "#"
+  },
+  {
+    "id": "2",
+    "name": "يلا لايف (نسخ تدليس)",
+    "category": "نسخ خاصة ومعدلة",
+    "price": "10 ريال",
+    "badge": "حصري",
+    "description": "نسخ تدليس مكررة جاهزة للعمل بأعلى استقرار.",
+    "icon": "https://img.icons8.com/color/512/live-video-on.png",
+    "ipaUrl": "#"
+  },
+  {
+    "id": "3",
+    "name": "يوتيوب بلس (YouTube Plus)",
+    "category": "تطبيقات بلس",
+    "price": "10 ريال",
+    "badge": "بلس",
+    "description": "حفظ المقاطع للألبوم، تشغيل في الخلفية، وبدون إعلانات نهائياً.",
+    "icon": "https://img.icons8.com/color/512/youtube-play.png",
+    "ipaUrl": "#"
+  },
+  {
+    "id": "4",
+    "name": "واتساب بلس (WhatsApp Plus)",
+    "category": "تطبيقات بلس",
+    "price": "10 ريال",
+    "badge": "بلس",
+    "description": "إخفاء الظهور والصحين الزرقاء، حفظ الحالات، ومنع حذف الرسائل.",
+    "icon": "https://img.icons8.com/color/512/whatsapp.png",
+    "ipaUrl": "#"
+  },
+  {
+    "id": "5",
+    "name": "انستا بلس (Instagram Plus)",
+    "category": "تطبيقات بلس",
+    "price": "10 ريال",
+    "badge": "بلس",
+    "description": "تحميل الستوري والبوستات بأعلى جودة، إخفاء قراءة الرسائل ومشاهدة البث بهدوء.",
+    "icon": "https://img.icons8.com/fluency/512/instagram-new.png",
+    "ipaUrl": "#"
+  },
+  {
+    "id": "6",
+    "name": "X بلس (تويتر بلس)",
+    "category": "تطبيقات بلس",
+    "price": "10 ريال",
+    "badge": "بلس",
+    "description": "تنزيل الفيديوهات بضغطة زر وتصفح بدون إعلانات مزعجة.",
+    "icon": "https://img.icons8.com/ios-filled/512/twitterx--v1.png",
+    "ipaUrl": "#"
+  },
+  {
+    "id": "7",
+    "name": "تيك توك بلس (TikTok Plus)",
+    "category": "تطبيقات بلس",
+    "price": "10 ريال",
+    "badge": "بلس",
+    "description": "حفظ الفيديوهات بدون علامة مائية، زيادة مدة التسجيل، وتخطي الحظر الإقليمي.",
+    "icon": "https://img.icons8.com/color/512/tiktok.png",
+    "ipaUrl": "#"
+  }
+]
