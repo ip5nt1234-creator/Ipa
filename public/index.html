@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة عبدالإله | رفع وتثبيت iOS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b0e14;
+      --card: #151921;
+      --border: #232936;
+      --accent: #0071e3;
+      --text: #f0f6fc;
+      --text-dim: #8b949e;
+      --success: #238636;
+      --error: #f85149;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+    body { background: var(--bg); color: var(--text); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 28px; width: 100%; max-width: 460px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    h1 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+    p.sub { text-align: center; color: var(--text-dim); font-size: 13px; margin-bottom: 22px; }
+    .group { margin-bottom: 14px; }
+    label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--text-dim); }
+    input[type="text"] { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #0b0e14; color: #fff; font-size: 14px; outline: none; }
+    input[type="text"]:focus { border-color: var(--accent); }
+    .file-box { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; background: #0b0e14; cursor: pointer; }
+    .file-box input { display: none; }
+    .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; background: var(--accent); color: white; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-install { display: none; margin-top: 15px; padding: 14px; border-radius: 10px; background: var(--success); color: white; text-align: center; text-decoration: none; font-weight: 700; font-size: 16px; }
+    .status { margin-top: 12px; text-align: center; font-size: 13px; color: #58a6ff; line-height: 1.5; }
+    .error-msg { color: var(--error) !important; }
+    .progress-bar-container { width: 100%; background: #0b0e14; border-radius: 8px; margin-top: 12px; height: 8px; overflow: hidden; display: none; }
+    .progress-bar { width: 0%; height: 100%; background: var(--accent); transition: width 0.2s ease; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h1>منصة عبدالإله</h1>
+  <p class="sub">رفع وتثبيت تطبيقات iOS من ملفات الجهاز مباشرة</p>
+
+  <div class="group">
+    <label>اختر ملف التطبيق (IPA):</label>
+    <div class="file-box" onclick="document.getElementById('ipaFile').click()">
+      <span id="ipaLabel">اضغط لاختيار ملف IPA</span>
+      <input type="file" id="ipaFile" accept=".ipa" onchange="handleFile(this)">
+    </div>
+  </div>
+
+  <div class="group">
+    <label>اسم التطبيق:</label>
+    <input type="text" id="appName" placeholder="اسم التطبيق">
+  </div>
+
+  <div class="group">
+    <label>معرف الحزمة (Bundle ID):</label>
+    <input type="text" id="bundleId" placeholder="معرف الحزمة">
+  </div>
+
+  <button class="btn" id="actionBtn" onclick="uploadToServer()">رفع وتجهيز التثبيت</button>
+
+  <div class="progress-bar-container" id="progContainer">
+    <div class="progress-bar" id="progBar"></div>
+  </div>
+
+  <div id="statusText" class="status"></div>
+  <a id="installBtn" class="btn-install" href="#">تثبيت التطبيق على الجهاز</a>
+</div>
+
+<script>
+let selectedFile = null;
+
+async function handleFile(input) {
+  if (!input.files || !input.files[0]) return;
+  selectedFile = input.files[0];
+  document.getElementById('ipaLabel').innerText = "تم اختيار: " + selectedFile.name;
+
+  try {
+    const zip = await JSZip.loadAsync(selectedFile);
+    let plistFile = null;
+    zip.forEach((path, file) => {
+      if (/^Payload\/[^\/]+\.app\/Info\.plist$/i.test(path)) plistFile = file;
+    });
+
+    if (plistFile) {
+      const content = await plistFile.async('string');
+      const bundle = content.match(/<key>CFBundleIdentifier<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      const name = content.match(/<key>(?:CFBundleDisplayName|CFBundleName)<\/key>[\s\r\n]*<string>([^<]+)<\/string>/i);
+      if (bundle) document.getElementById('bundleId').value = bundle[1].trim();
+      if (name) document.getElementById('appName').value = name[1].trim();
+    }
+  } catch(e) {}
+}
+
+function uploadToServer() {
+  if (!selectedFile) {
+    alert('يرجى اختيار ملف IPA أولاً');
+    return;
+  }
+
+  const appName = document.getElementById('appName').value.trim() || 'App';
+  const bundleId = document.getElementById('bundleId').value.trim() || 'com.app';
+  const status = document.getElementById('statusText');
+  const actionBtn = document.getElementById('actionBtn');
+  const installBtn = document.getElementById('installBtn');
+  const progContainer = document.getElementById('progContainer');
+  const progBar = document.getElementById('progBar');
+
+  installBtn.style.display = 'none';
+  status.classList.remove('error-msg');
+  progContainer.style.display = 'block';
+  progBar.style.width = '0%';
+  actionBtn.disabled = true;
+  status.innerText = "جاري رفع الملف إلى سيرفر Render...";
+
+  const xhr = new XMLHttpRequest();
+  const formData = new FormData();
+  formData.append('file', selectedFile);
+
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const percent = Math.round((e.loaded / e.total) * 100);
+      progBar.style.width = percent + '%';
+      status.innerText = `جاري الرفع: ${percent}%`;
+    }
+  };
+
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      const data = JSON.parse(xhr.responseText);
+      const currentHost = window.location.origin;
+      const manifestUrl = `${currentHost}/manifest?url=${encodeURIComponent(data.downloadUrl)}&name=${encodeURIComponent(appName)}&id=${encodeURIComponent(bundleId)}`;
+      const otaUrl = `itms-services://?action=download-manifest&url=${encodeURIComponent(manifestUrl)}`;
+
+      installBtn.href = otaUrl;
+      installBtn.style.display = 'block';
+      installBtn.innerText = `تثبيت ${appName} على الآيفون`;
+      status.innerText = "اكتمل الرفع بنجاح! اضغط زر التثبيت الأخضر.";
+    } else {
+      status.classList.add('error-msg');
+      status.innerText = "فشل السيرفر في استلام الملف.";
+    }
+    actionBtn.disabled = false;
+  };
+
+  xhr.onerror = () => {
+    status.classList.add('error-msg');
+    status.innerText = "انقطع الاتصال بالسيرفر أثناء النقل.";
+    actionBtn.disabled = false;
+  };
+
+  xhr.open('POST', '/api/upload', true);
+  xhr.send(formData);
+}
+</script>
+
+</body>
+</html>
